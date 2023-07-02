@@ -1,0 +1,5 @@
+.idea
+
+configs/*
+
+*.exe
