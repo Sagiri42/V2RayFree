@@ -15,7 +15,7 @@ import (
 func main() {
 	// TODO 公共节点定时获取
 	utils.Ticker(config.Config.UpdateAt, func() {
-		config.Config.ReadConfig()
+		_ = config.Config.ReadConfig()
 
 		var nodes []model.Node
 
@@ -34,7 +34,7 @@ func main() {
 		nodes = server.NodeTcpTest.Filter(nodes)
 
 		for i := range nodes {
-			if nodes[i].TCPTest < 1000 {
+			if nodes[i].TCPTest > 0 && nodes[i].TCPTest < 1000 {
 				db.DB.Model(model.Node{}).Create(&nodes[i])
 			}
 		}
@@ -42,9 +42,21 @@ func main() {
 	})
 
 	// TODO 数据库节点定时检查
-	//utils.Ticker(config.Config.UpdateAt, func() {
-	//
-	//})
+	utils.Ticker(config.Config.UpdateAt/2, func() {
+		nodes := model.QueryAllNode(db.DB)
+		server.NodeTcpTest.Filter(nodes)
+		server.NodeFailures.Filter(nodes)
+		var ns []model.Node
+		for i := range nodes {
+			if nodes[i].Failures <= 5 {
+				ns = append(ns, nodes[i])
+			} else {
+				log.Printf("%v节点已失效", nodes[i].Link)
+				db.DB.Model(model.Node{}).Delete(&nodes[i])
+			}
+		}
+		db.DB.Model(model.Node{}).Updates(&ns)
+	})
 
 	// TODO 订阅API接口
 	http.HandleFunc("/api/subscribe", service.SubscribeHandle)

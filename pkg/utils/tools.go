@@ -41,12 +41,12 @@ func NodeToHP(link string) string {
 			}
 		}
 	case strings.HasPrefix(link, "ss://"):
-		if data := regexp.MustCompile("@(.*?):[0-9]+#").FindStringSubmatch(link); len(data) >= 2 {
-			return data[1]
+		if data := regexp.MustCompile("@(.*?):[0-9]+#").FindStringSubmatch(link)[0]; len(data) >= 2 {
+			return data[1 : len(data)-1]
 		}
 	case strings.HasPrefix(link, "trojan://"):
-		if data := regexp.MustCompile("@(.*?):[0-9]+\\?").FindStringSubmatch(link); len(data) >= 2 {
-			return data[1]
+		if data := regexp.MustCompile("@(.*?):[0-9]+\\?").FindStringSubmatch(link)[0]; len(data) >= 2 {
+			return data[1 : len(data)-1]
 		}
 	}
 	return ""
@@ -58,6 +58,8 @@ func TCPTest(hp string) uint16 {
 	if err != nil {
 		return 0
 	}
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		_ = conn.Close()
+	}(conn)
 	return uint16(time.Since(startTime).Milliseconds())
 }
